@@ -21,6 +21,8 @@ const MOCK_COMMENTS = [
   "They compost and use recyclable packaging.",
 ];
 
+const CAR_EMISSIONS_G_PER_KM = 192;
+
 const pickRandom = (arr, count = 2) => {
   const copy = [...arr];
   const out = [];
@@ -29,6 +31,29 @@ const pickRandom = (arr, count = 2) => {
     out.push(copy.splice(idx, 1)[0]);
   }
   return out;
+};
+
+const formatPriceLevel = (priceLevel) => {
+  if (!priceLevel) return "Not listed";
+  const map = {
+    PRICE_LEVEL_UNSPECIFIED: "Not listed",
+    PRICE_LEVEL_FREE: "Free",
+    PRICE_LEVEL_INEXPENSIVE: "$",
+    PRICE_LEVEL_MODERATE: "$$",
+    PRICE_LEVEL_EXPENSIVE: "$$$",
+    PRICE_LEVEL_VERY_EXPENSIVE: "$$$$",
+  };
+  return map[priceLevel] || priceLevel;
+};
+
+const formatBusinessStatus = (status) => {
+  if (!status) return "Not listed";
+  const map = {
+    OPERATIONAL: "Operational",
+    CLOSED_TEMPORARILY: "Temporarily closed",
+    CLOSED_PERMANENTLY: "Permanently closed",
+  };
+  return map[status] || status;
 };
 
 const scoreRestaurant = (tags, quiz) => {
@@ -82,11 +107,16 @@ function App() {
   const [error, setError] = useState("");
   const [places, setPlaces] = useState([]);
   const [selectedPlace, setSelectedPlace] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
+  const [routeInfo, setRouteInfo] = useState({ distanceKm: null, durationMin: null, carbonG: null });
+  const [youtubeResults, setYoutubeResults] = useState([]);
+  const [youtubeStatus, setYoutubeStatus] = useState("idle");
+  const [quizStarted, setQuizStarted] = useState(false);
 
   const [quiz, setQuiz] = useState({
-    diet: "Any",
-    budget: "$$",
-    priorities: ["waste", "value"],
+    diet: null,
+    budget: null,
+    priorities: [],
     maxDistanceKm: 3,
   });
 
@@ -100,6 +130,7 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!quizStarted) return;
     if (!mapRef.current || mapInstanceRef.current) return;
     const map = L.map(mapRef.current, { zoomControl: false }).setView(DEFAULT_CENTER, 13);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -108,50 +139,82 @@ function App() {
     L.control.zoom({ position: "bottomright" }).addTo(map);
     mapInstanceRef.current = map;
     setMapReady(true);
+    // Ensure tiles render after the container becomes visible.
+    setTimeout(() => map.invalidateSize(), 0);
+  }, [quizStarted]);
+
+  useEffect(() => {
+    if (!quizStarted) return;
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    const onResize = () => map.invalidateSize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [quizStarted]);
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setUserLocation(DEFAULT_CENTER);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+      },
+      () => {
+        setUserLocation(DEFAULT_CENTER);
+      },
+      { enableHighAccuracy: false, timeout: 5000 }
+    );
   }, []);
 
-  const fetchPlaces = async () => {
+const fetchPlaces = async () => {
     const map = mapInstanceRef.current;
     if (!map) return;
     setLoading(true);
     setError("");
 
-    const bounds = map.getBounds();
-    const bbox = [
-      bounds.getSouth(),
-      bounds.getWest(),
-      bounds.getNorth(),
-      bounds.getEast(),
-    ].join(",");
-
-    const query = `
-      [out:json][timeout:25];
-      (
-        node["amenity"="restaurant"](${bbox});
-      );
-      out tags center 60;
-    `;
-
     try {
-      const res = await fetch("https://overpass-api.de/api/interpreter", {
+      const center = map.getCenter();
+      const safeLat = Number.isFinite(center?.lat) ? center.lat : DEFAULT_CENTER[0];
+      const safeLng = Number.isFinite(center?.lng) ? center.lng : DEFAULT_CENTER[1];
+      const res = await fetch("http://localhost:3001/api/places", {
         method: "POST",
-        body: query,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lat: safeLat,
+          lng: safeLng,
+          radiusMeters: 2000,
+        }),
       });
-      if (!res.ok) throw new Error("Failed to reach Overpass API");
+      if (!res.ok) throw new Error("Failed to reach Places API");
       const data = await res.json();
-      const formatted = (data.elements || []).map((el) => {
-        const tags = el.tags || {};
-        const name = tags.name || "Unknown Spot";
+      const formatted = (data.places || []).map((p, idx) => {
+        const tags = {
+          cuisine: p.types?.[0],
+          website: p.websiteUri,
+          address: p.formattedAddress,
+          phone: p.nationalPhoneNumber || p.internationalPhoneNumber,
+          openNow: p.regularOpeningHours?.openNow,
+          hours: p.regularOpeningHours?.weekdayDescriptions,
+          priceLevel: p.priceLevel,
+          mapsUri: p.googleMapsUri,
+          businessStatus: p.businessStatus,
+          summary: p.editorialSummary?.text,
+        };
+        const name = p.displayName?.text || "Unknown Spot";
         const { score, reasons } = scoreRestaurant(tags, quiz);
         return {
-          id: el.id,
+          id: p.id || `${name}-${idx}`,
           name,
-          lat: el.lat,
-          lon: el.lon,
+          lat: p.location?.latitude,
+          lon: p.location?.longitude,
           tags,
           score,
           reasons,
           comments: pickRandom(MOCK_COMMENTS, 2),
+          rating: p.rating,
+          ratingCount: p.userRatingCount,
         };
       });
       setPlaces(formatted);
@@ -163,22 +226,72 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    if (!mapReady) return;
-    fetchPlaces();
-  }, [mapReady, quiz.diet, quiz.budget, quiz.priorities.join(","), quiz.maxDistanceKm]);
+  const fetchRoute = async (origin, destination) => {
+    if (!origin || !destination) return;
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/${origin[1]},${origin[0]};${destination[1]},${destination[0]}?overview=false`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("OSRM routing failed");
+      const data = await res.json();
+      const route = data?.routes?.[0];
+      if (!route) throw new Error("No route found");
+      const distanceKm = route.distance / 1000;
+      const durationMin = route.duration / 60;
+      const carbonG = Math.round(distanceKm * CAR_EMISSIONS_G_PER_KM);
+      setRouteInfo({ distanceKm, durationMin, carbonG });
+    } catch {
+      setRouteInfo({ distanceKm: null, durationMin: null, carbonG: null });
+    }
+  };
 
   useEffect(() => {
+    if (!mapReady || !quizStarted) return;
+    fetchPlaces();
+  }, [mapReady, quizStarted, quiz.diet, quiz.budget, quiz.priorities.join(","), quiz.maxDistanceKm]);
+
+  const getMarkerColors = (score) => {
+    if (score >= 75) return { stroke: "#15803d", fill: "#34d399" };
+    if (score >= 50) return { stroke: "#7c3aed", fill: "#c084fc" };
+    return { stroke: "#b45309", fill: "#f59e0b" };
+  };
+
+  useEffect(() => {
+    if (!quizStarted) return;
     const map = mapInstanceRef.current;
     if (!map) return;
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = places.map((place) => {
-      const marker = L.marker([place.lat, place.lon]).addTo(map);
-      marker.bindPopup(`<strong>${place.name}</strong><br/>Score: ${place.score}/100`);
+      const radius = 6 + Math.round((place.score / 100) * 10);
+      const colors = getMarkerColors(place.score);
+      const marker = L.circleMarker([place.lat, place.lon], {
+        radius,
+        color: colors.stroke,
+        fillColor: colors.fill,
+        fillOpacity: 0.85,
+        weight: 2,
+      }).addTo(map);
+      const price = formatPriceLevel(place.tags?.priceLevel);
+      const ratingText = place.rating ? `${place.rating} (${place.ratingCount ?? 0})` : "N/A";
+      const openText =
+        place.tags?.openNow === undefined ? "Hours unknown" : place.tags?.openNow ? "Open now" : "Closed now";
+      marker.bindPopup(
+        `<strong>${place.name}</strong>` +
+          `<br/>Score: ${place.score}/100` +
+          `<br/>Rating: ${ratingText}` +
+          `<br/>Price: ${price}` +
+          `<br/>Status: ${openText}` +
+          `<br/>Address: ${place.tags?.address || "Not listed"}`
+      );
       marker.on("click", () => setSelectedPlace(place));
       return marker;
     });
   }, [places]);
+
+  useEffect(() => {
+    if (userLocation && selectedPlace) {
+      fetchRoute(userLocation, [selectedPlace.lat, selectedPlace.lon]);
+    }
+  }, [userLocation, selectedPlace]);
 
   const topPlaces = useMemo(() => {
     return [...places].sort((a, b) => b.score - a.score).slice(0, 8);
@@ -193,6 +306,97 @@ function App() {
       return { ...prev, priorities };
     });
   };
+
+  const quizReady = Boolean(quiz.diet && quiz.budget && quiz.priorities.length);
+
+  if (!quizStarted) {
+    return (
+      <div className="start-screen">
+        <div className="start-card intro">
+          <p className="eyebrow">Sustainable Dining Finder</p>
+          <h1>Personalize your journey</h1>
+          <p className="subtitle">
+            We use your preferences to tailor sustainability scores, highlight the right places, and explain why each
+            match fits you.
+          </p>
+          <div className="intro-grid">
+            <div className="intro-item">
+              <h3>More detail per place</h3>
+              <p>Phone, hours, price level, ratings, and editorial summaries where available.</p>
+            </div>
+            <div className="intro-item">
+              <h3>Transparent scoring</h3>
+              <p>Every score shows the exact signals that influenced it.</p>
+            </div>
+            <div className="intro-item">
+              <h3>Smarter recommendations</h3>
+              <p>Your priorities shift the ranking so the top list feels personal.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="start-card quiz">
+          <h2>Personalization quiz</h2>
+          <div className="field">
+            <label>Diet preference</label>
+            <div className="chips">
+              {DIET_OPTIONS.map((diet) => (
+                <button
+                  key={diet}
+                  onClick={() => setQuiz((prev) => ({ ...prev, diet }))}
+                  className={diet === quiz.diet ? "chip active" : "chip"}
+                >
+                  {diet}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="field">
+            <label>Budget comfort</label>
+            <div className="chips">
+              {BUDGET_OPTIONS.map((budget) => (
+                <button
+                  key={budget}
+                  onClick={() => setQuiz((prev) => ({ ...prev, budget }))}
+                  className={budget === quiz.budget ? "chip active" : "chip"}
+                >
+                  {budget}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="field">
+            <label>Sustainability priorities</label>
+            <div className="chips">
+              {PRIORITIES.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => togglePriority(p.id)}
+                  className={quiz.priorities.includes(p.id) ? "chip active" : "chip"}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="field">
+            <label>Max distance: {quiz.maxDistanceKm} km</label>
+            <input
+              type="range"
+              min={1}
+              max={8}
+              value={quiz.maxDistanceKm}
+              onChange={(e) => setQuiz((prev) => ({ ...prev, maxDistanceKm: Number(e.target.value) }))}
+            />
+          </div>
+          {!quizReady ? <p className="muted">Select a diet, budget, and at least one priority to continue.</p> : null}
+          <button className="cta" disabled={!quizReady} onClick={() => setQuizStarted(true)}>
+            Start exploring
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -281,6 +485,11 @@ function App() {
 
         <section className="map-wrap">
           <div className="map" ref={mapRef} />
+          <div className="legend">
+            <div><span className="dot high" /> High sustainability</div>
+            <div><span className="dot mid" /> Medium sustainability</div>
+            <div><span className="dot low" /> Lower sustainability</div>
+          </div>
         </section>
 
         <section className="panel results">
@@ -298,6 +507,11 @@ function App() {
                     </div>
                     <span className="pill">{place.tags?.cuisine || "Local favorite"}</span>
                   </div>
+                  <div className="result-meta">
+                    <span>{formatPriceLevel(place.tags?.priceLevel)}</span>
+                    <span>{place.rating ? `Rating ${place.rating}` : "No rating yet"}</span>
+                    <span>{place.tags?.openNow === undefined ? "Hours unknown" : place.tags?.openNow ? "Open now" : "Closed now"}</span>
+                  </div>
                   <p className="explain">{buildExplanation(place.name, place.score, place.reasons)}</p>
                   <div className="reasons">
                     {place.reasons.map((reason, idx) => (
@@ -308,7 +522,7 @@ function App() {
                   </div>
                   <div className="comments">
                     {place.comments.map((comment, idx) => (
-                      <p key={idx}>“{comment}”</p>
+                      <p key={idx}>"{comment}"</p>
                     ))}
                   </div>
                 </div>
@@ -329,6 +543,7 @@ function App() {
                   <span className="pill">{selectedPlace.tags?.cuisine || "Restaurant"}</span>
                 </div>
                 <p className="explain">{buildExplanation(selectedPlace.name, selectedPlace.score, selectedPlace.reasons)}</p>
+                {selectedPlace.tags?.summary ? <p className="summary">"{selectedPlace.tags.summary}"</p> : null}
                 <div className="reasons">
                   {selectedPlace.reasons.map((reason, idx) => (
                     <span key={idx} className="tag">
@@ -338,13 +553,52 @@ function App() {
                 </div>
                 <div className="comments">
                   {selectedPlace.comments.map((comment, idx) => (
-                    <p key={idx}>“{comment}”</p>
+                    <p key={idx}>"{comment}"</p>
                   ))}
                 </div>
                 <div className="meta">
-                  <div><strong>Address:</strong> {selectedPlace.tags?.["addr:full"] || "Not listed"}</div>
+                  <div><strong>Address:</strong> {selectedPlace.tags?.address || "Not listed"}</div>
                   <div><strong>Phone:</strong> {selectedPlace.tags?.phone || "Not listed"}</div>
-                  <div><strong>Website:</strong> {selectedPlace.tags?.website || "Not listed"}</div>
+                  <div><strong>Rating:</strong> {selectedPlace.rating ?? "N/A"} ({selectedPlace.ratingCount ?? "N/A"} reviews)</div>
+                  <div><strong>Price level:</strong> {formatPriceLevel(selectedPlace.tags?.priceLevel)}</div>
+                  <div>
+                    <strong>Open now:</strong>{" "}
+                    {selectedPlace.tags?.openNow === undefined
+                      ? "Hours unknown"
+                      : selectedPlace.tags?.openNow
+                        ? "Yes"
+                        : "No"}
+                  </div>
+                </div>
+                <div className="youtube">
+                  <button
+                    className="chip"
+                    onClick={async () => {
+                      try {
+                        setYoutubeStatus("loading");
+                        const r = await fetch(
+                          `http://localhost:3001/api/youtube/search?q=${encodeURIComponent(selectedPlace.name)}`
+                        );
+                        const data = await r.json();
+                        setYoutubeResults(data.items || []);
+                        setYoutubeStatus("done");
+                      } catch {
+                        setYoutubeStatus("error");
+                      }
+                    }}
+                  >
+                    Find YouTube mentions
+                  </button>
+                  {youtubeStatus === "loading" ? <p className="muted">Loading YouTube results...</p> : null}
+                  {youtubeResults.length ? (
+                    <ul className="youtube-list">
+                      {youtubeResults.map((item) => (
+                        <li key={item.id?.videoId}>
+                          {item.snippet?.title}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </div>
               </div>
             )}
@@ -356,3 +610,4 @@ function App() {
 }
 
 export default App;
+
