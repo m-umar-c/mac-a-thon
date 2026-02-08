@@ -1,107 +1,137 @@
 [
-    {
-      "name": "VegeDelight",
-      "address": "173 Dundas St W, Toronto, ON M5T 1C7",
-      "type": "Vegetarian",
-      "cuisine": "Chinese/Asian Fusion",
-      "distance_miles": 0.3
-    },
-    {
-      "name": "PLANTA Queen",
-      "address": "180 Queen St W, Toronto, ON M5V 3X3",
-      "type": "Vegan",
-      "cuisine": "Asian Fusion/Sushi",
-      "distance_miles": 0.6
-    },
-    {
-      "name": "Kupfert & Kim (First Canadian Place)",
-      "address": "100 King St W, Toronto, ON M5X 1A9",
-      "type": "Vegan",
-      "cuisine": "Plant-based Bowls",
-      "distance_miles": 0.7
-    },
-    {
-      "name": "Avelo",
-      "address": "51 St Nicholas St, Toronto, ON M4Y 1W6",
-      "type": "Vegan",
-      "cuisine": "Fine Dining/European",
-      "distance_miles": 0.8
-    },
-    {
-      "name": "Rosalinda",
-      "address": "133 Richmond St W, Toronto, ON M5H 2L3",
-      "type": "Vegan",
-      "cuisine": "Mexican",
-      "distance_miles": 0.5
-    },
-    {
-      "name": "Saigon Lotus",
-      "address": "6 St Andrew St, Toronto, ON M5T 1K6",
-      "type": "Vegan",
-      "cuisine": "Vietnamese",
-      "distance_miles": 0.8
-    },
-    {
-      "name": "Soy Boys",
-      "address": "471 Church St, Toronto, ON M4Y 2C5",
-      "type": "Vegan",
-      "cuisine": "Fast Food/Burgers",
-      "distance_miles": 0.7
-    },
-    {
-      "name": "Buddha's Vegan Restaurant",
-      "address": "666 Dundas St W, Toronto, ON M5T 1H9",
-      "type": "Vegan",
-      "cuisine": "Chinese/Buddhist",
-      "distance_miles": 0.9
-    },
-    {
-      "name": "Greens Vegetarian",
-      "address": "638 Dundas St W, Toronto, ON M5T 1H8",
-      "type": "Vegan",
-      "cuisine": "Pan-Asian",
-      "distance_miles": 0.9
-    },
-    {
-      "name": "Fresh Kitchen + Juice Bar (Front St)",
-      "address": "47 Front St E, Toronto, ON M5E 1B3",
-      "type": "Vegan",
-      "cuisine": "Plant-based Comfort Food",
-      "distance_miles": 0.7
-    },
-    {
-      "name": "Copper Branch",
-      "address": "199 Bay St (Commerce Court), Toronto, ON M5L 1E2",
-      "type": "Vegan",
-      "cuisine": "Fast Casual",
-      "distance_miles": 0.6
-    },
-    {
-      "name": "Fat Choi (Inside SOOS)",
-      "address": "94 Ossington Ave, Toronto, ON M6J 2Z4",
-      "type": "Vegan",
-      "cuisine": "Malaysian Fusion",
-      "distance_miles": 1.2
-    },
-    {
-      "name": "Kupfert & Kim (Spadina)",
-      "address": "140 Spadina Ave, Toronto, ON M5V 2L4",
-      "type": "Vegan",
-      "cuisine": "Bowls & Salads",
-      "distance_miles": 0.9
-    },
-    {
-      "name": "Veggie D'Light",
-      "address": "160 Baldwin St #3, Toronto, ON M5T 3K7",
-      "type": "Vegan",
-      "cuisine": "Caribbean",
-      "distance_miles": 0.8
-    },
-    {
-      "name": "Blaze Pizza (Dundas St)",
-      "address": "10 Dundas St E #124, Toronto, ON M5B 2G9",
-      "type": "Vegetarian Friendly",
-      "cuisine": "Pizza (Vegan Cheese available)",
-      "distance_miles": 0.1
-    }
-  ]
+  {
+    "name": "VegeDelight",
+    "address": "173 Dundas St W, Toronto, ON M5T 1C7",
+    "type": "Vegetarian",
+    "cuisine": "Chinese/Asian Fusion",
+    "distance_miles": 0.3,
+    "latitude": 43.6550,
+    "longitude": -79.3847
+  },
+  {
+    "name": "PLANTA Queen",
+    "address": "180 Queen St W, Toronto, ON M5V 3X3",
+    "type": "Vegan",
+    "cuisine": "Asian Fusion/Sushi",
+    "distance_miles": 0.6,
+    "latitude": 43.6502,
+    "longitude": -79.3888
+  },
+  {
+    "name": "Kupfert & Kim (First Canadian Place)",
+    "address": "100 King St W, Toronto, ON M5X 1A9",
+    "type": "Vegan",
+    "cuisine": "Plant-based Bowls",
+    "distance_miles": 0.7,
+    "latitude": 43.6488,
+    "longitude": -79.3817
+  },
+  {
+    "name": "Avelo",
+    "address": "51 St Nicholas St, Toronto, ON M4Y 1W6",
+    "type": "Vegan",
+    "cuisine": "Fine Dining/European",
+    "distance_miles": 0.8,
+    "latitude": 43.6670,
+    "longitude": -79.3863
+  },
+  {
+    "name": "Rosalinda",
+    "address": "133 Richmond St W, Toronto, ON M5H 2L3",
+    "type": "Vegan",
+    "cuisine": "Mexican",
+    "distance_miles": 0.5,
+    "latitude": 43.6501,
+    "longitude": -79.3848
+  },
+  {
+    "name": "Saigon Lotus",
+    "address": "6 St Andrew St, Toronto, ON M5T 1K6",
+    "type": "Vegan",
+    "cuisine": "Vietnamese",
+    "distance_miles": 0.8,
+    "latitude": 43.6543,
+    "longitude": -79.3994
+  },
+  {
+    "name": "Soy Boys",
+    "address": "471 Church St, Toronto, ON M4Y 2C5",
+    "type": "Vegan",
+    "cuisine": "Fast Food/Burgers",
+    "distance_miles": 0.7,
+    "latitude": 43.6644,
+    "longitude": -79.3805
+  },
+  {
+    "name": "Buddha's Vegan Restaurant",
+    "address": "666 Dundas St W, Toronto, ON M5T 1H9",
+    "type": "Vegan",
+    "cuisine": "Chinese/Buddhist",
+    "distance_miles": 0.9,
+    "latitude": 43.6529,
+    "longitude": -79.4049
+  },
+  {
+    "name": "Greens Vegetarian",
+    "address": "638 Dundas St W, Toronto, ON M5T 1H8",
+    "type": "Vegan",
+    "cuisine": "Pan-Asian",
+    "distance_miles": 0.9,
+    "latitude": 43.6532,
+    "longitude": -79.4036
+  },
+  {
+    "name": "Fresh Kitchen + Juice Bar (Front St)",
+    "address": "47 Front St E, Toronto, ON M5E 1B3",
+    "type": "Vegan",
+    "cuisine": "Plant-based Comfort Food",
+    "distance_miles": 0.7,
+    "latitude": 43.6483,
+    "longitude": -79.3740
+  },
+  {
+    "name": "Copper Branch",
+    "address": "199 Bay St (Commerce Court), Toronto, ON M5L 1E2",
+    "type": "Vegan",
+    "cuisine": "Fast Casual",
+    "distance_miles": 0.6,
+    "latitude": 43.6481,
+    "longitude": -79.3801
+  },
+  {
+    "name": "Fat Choi (Inside SOOS)",
+    "address": "94 Ossington Ave, Toronto, ON M6J 2Z4",
+    "type": "Vegan",
+    "cuisine": "Malaysian Fusion",
+    "distance_miles": 1.2,
+    "latitude": 43.6473,
+    "longitude": -79.4200
+  },
+  {
+    "name": "Kupfert & Kim (Spadina)",
+    "address": "140 Spadina Ave, Toronto, ON M5V 2L4",
+    "type": "Vegan",
+    "cuisine": "Bowls & Salads",
+    "distance_miles": 0.9,
+    "latitude": 43.6486,
+    "longitude": -79.3963
+  },
+  {
+    "name": "Veggie D'Light",
+    "address": "160 Baldwin St #3, Toronto, ON M5T 3K7",
+    "type": "Vegan",
+    "cuisine": "Caribbean",
+    "distance_miles": 0.8,
+    "latitude": 43.6551,
+    "longitude": -79.3999
+  },
+  {
+    "name": "Blaze Pizza (Dundas St)",
+    "address": "10 Dundas St E #124, Toronto, ON M5B 2G9",
+    "type": "Vegetarian Friendly",
+    "cuisine": "Pizza (Vegan Cheese available)",
+    "distance_miles": 0.1,
+    "latitude": 43.6568,
+    "longitude": -79.3807
+  }
+]
