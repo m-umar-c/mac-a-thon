@@ -105,12 +105,6 @@
   gap: 8px;
 }
 
-.voice-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .chip {
   border: 1px solid #cbd5f5;
   background: #ffffff;

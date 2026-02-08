@@ -3,10 +3,11 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
 import sustainabilityMock from "../final_sustainability_mock.json";
+import mockRestaurants from "../mock_restaurants_data.json";
 
 const DEFAULT_CENTER = [43.6532, -79.3832]; // Toronto
 
-const DIET_OPTIONS = ["Any", "Vegetarian", "Vegan", "Halal", "Gluten-Free"];
+const DIET_OPTIONS = ["Any", "Vegetarian", "Vegan"];
 const BUDGET_OPTIONS = ["$", "$$", "$$$"];
 const PRIORITIES = [
   { id: "waste", label: "Low Food Waste" },
@@ -192,59 +193,35 @@ const fetchPlaces = async () => {
     setError("");
 
     try {
-      const center = map.getCenter();
-      const safeLat = Number.isFinite(center?.lat) ? center.lat : DEFAULT_CENTER[0];
-      const safeLng = Number.isFinite(center?.lng) ? center.lng : DEFAULT_CENTER[1];
-      const res = await fetch("http://localhost:3001/api/places", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lat: safeLat,
-          lng: safeLng,
-          radiusMeters: 2000,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to reach Places API");
-      const data = await res.json();
-      const formatted = (data.places || []).map((p, idx) => {
-        const types = p.types || [];
-        const isVegan = types.includes("vegan_restaurant");
-        const isVegetarian = types.includes("vegetarian_restaurant");
+      const formatted = (mockRestaurants || []).map((p, idx) => {
+        const typeLower = String(p.type || "").toLowerCase();
+        const isVegan = typeLower.includes("vegan");
+        const isVegetarian = typeLower.includes("vegetarian");
         const tags = {
-          cuisine: types[0],
-          website: p.websiteUri,
-          address: p.formattedAddress,
-          phone: p.nationalPhoneNumber || p.internationalPhoneNumber,
-          openNow: p.regularOpeningHours?.openNow,
-          hours: p.regularOpeningHours?.weekdayDescriptions,
-          priceLevel: p.priceLevel,
-          mapsUri: p.googleMapsUri,
-          businessStatus: p.businessStatus,
-          summary: p.editorialSummary?.text,
+          cuisine: p.cuisine,
+          address: p.address,
           vegan: isVegan ? "yes" : "no",
           vegetarian: isVegetarian ? "yes" : "no",
         };
-        const name = p.displayName?.text || "Unknown Spot";
+        const name = p.name || "Unknown Spot";
         const { score, reasons } = scoreRestaurant(tags, quiz);
         const mockKey = `${normalizeKey(name)}|${normalizeKey(tags.address)}`;
         const mockEntry = (isVegan || isVegetarian) ? sustainabilityIndex.get(mockKey) : null;
         const finalScore = mockEntry?.sustainability_score ?? score;
-        const finalReasons = mockEntry
-          ? [...reasons, "Verified sustainability dataset"]
-          : reasons;
+        const finalReasons = mockEntry ? [...reasons, "Verified sustainability dataset"] : reasons;
         return {
-          id: p.id || `${name}-${idx}`,
+          id: `${name}-${idx}`,
           name,
-          lat: p.location?.latitude,
-          lon: p.location?.longitude,
+          lat: p.latitude,
+          lon: p.longitude,
           tags,
           score: Math.round(finalScore),
           reasons: finalReasons,
           sustainabilityNote: mockEntry?.sustainability_note,
           sustainabilityBreakdown: mockEntry?.breakdown,
           comments: pickRandom(MOCK_COMMENTS, 2),
-          rating: p.rating,
-          ratingCount: p.userRatingCount,
+          rating: null,
+          ratingCount: null,
         };
       });
       setPlaces(formatted);
@@ -291,13 +268,20 @@ const fetchPlaces = async () => {
     if (!map) return;
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = places.map((place) => {
-      const radius = 6 + Math.round((place.score / 100) * 10);
+      const isVegan = place.tags?.vegan === "yes";
+      const isVegetarian = place.tags?.vegetarian === "yes";
+      const radius = isVegan || isVegetarian
+        ? 6 + Math.round((place.score / 100) * 6)
+        : 6 + Math.round((place.score / 100) * 10);
       const colors = getMarkerColors(place.score);
+      const markerColors = isVegan || isVegetarian
+        ? { stroke: "#16a34a", fill: "#22c55e" }
+        : colors;
       const marker = L.circleMarker([place.lat, place.lon], {
         radius,
-        color: colors.stroke,
-        fillColor: colors.fill,
-        fillOpacity: 0.85,
+        color: markerColors.stroke,
+        fillColor: markerColors.fill,
+        fillOpacity: isVegan || isVegetarian ? 0.35 : 0.85,
         weight: 2,
       }).addTo(map);
       const price = formatPriceLevel(place.tags?.priceLevel);
@@ -314,8 +298,8 @@ const fetchPlaces = async () => {
       );
       marker.on("click", () => {
         setSelectedPlace(place);
-        const isPurple = place.score >= 50 && place.score < 75;
-        if (quiz.voiceEnabled && isPurple) {
+        const isVeganOrVeg = place.tags?.vegan === "yes" || place.tags?.vegetarian === "yes";
+        if (quiz.voiceEnabled && isVeganOrVeg) {
           requestSpokenSummary(place);
         }
       });
@@ -346,7 +330,7 @@ const fetchPlaces = async () => {
   const quizReady = Boolean(quiz.diet && quiz.budget && quiz.priorities.length);
 
   const requestSpokenSummary = async (place) => {
-    if (!place?.id) return;
+    if (!place?.name) return;
     try {
       setVoiceStatus("loading");
       setVoiceMessage("Generating voice summary...");
@@ -357,12 +341,10 @@ const fetchPlaces = async () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           place: {
-            id: place.id,
             name: place.name,
             score: place.score,
-            rating: place.rating,
-            ratingCount: place.ratingCount,
             tags: place.tags,
+            sustainabilityNote: place.sustainabilityNote,
           },
           quiz,
           voiceGender: quiz.voiceGender,
@@ -480,27 +462,13 @@ const fetchPlaces = async () => {
             />
           </div>
           <div className="field">
-            <label>Spoken summaries</label>
-            <div className="voice-row">
+            <label>Spoken sustainability notes</label>
+            <div className="chips">
               <button
                 className={quiz.voiceEnabled ? "chip active" : "chip"}
                 onClick={() => setQuiz((prev) => ({ ...prev, voiceEnabled: !prev.voiceEnabled }))}
               >
                 {quiz.voiceEnabled ? "Enabled" : "Disabled"}
-              </button>
-              <button
-                className={quiz.voiceGender === "female" ? "chip active" : "chip"}
-                onClick={() => setQuiz((prev) => ({ ...prev, voiceGender: "female" }))}
-                disabled={!quiz.voiceEnabled}
-              >
-                Female voice
-              </button>
-              <button
-                className={quiz.voiceGender === "male" ? "chip active" : "chip"}
-                onClick={() => setQuiz((prev) => ({ ...prev, voiceGender: "male" }))}
-                disabled={!quiz.voiceEnabled}
-              >
-                Male voice
               </button>
             </div>
           </div>
@@ -590,27 +558,13 @@ const fetchPlaces = async () => {
               />
             </div>
             <div className="field">
-              <label>Spoken summaries</label>
-              <div className="voice-row">
+              <label>Spoken sustainability notes</label>
+              <div className="chips">
                 <button
                   className={quiz.voiceEnabled ? "chip active" : "chip"}
                   onClick={() => setQuiz((prev) => ({ ...prev, voiceEnabled: !prev.voiceEnabled }))}
                 >
                   {quiz.voiceEnabled ? "Enabled" : "Disabled"}
-                </button>
-                <button
-                  className={quiz.voiceGender === "female" ? "chip active" : "chip"}
-                  onClick={() => setQuiz((prev) => ({ ...prev, voiceGender: "female" }))}
-                  disabled={!quiz.voiceEnabled}
-                >
-                  Female voice
-                </button>
-                <button
-                  className={quiz.voiceGender === "male" ? "chip active" : "chip"}
-                  onClick={() => setQuiz((prev) => ({ ...prev, voiceGender: "male" }))}
-                  disabled={!quiz.voiceEnabled}
-                >
-                  Male voice
                 </button>
               </div>
             </div>
@@ -687,6 +641,9 @@ const fetchPlaces = async () => {
                 </div>
                 <p className="explain">{buildExplanation(selectedPlace.name, selectedPlace.score, selectedPlace.reasons)}</p>
                 {selectedPlace.tags?.summary ? <p className="summary">"{selectedPlace.tags.summary}"</p> : null}
+                {selectedPlace.sustainabilityNote ? (
+                  <p className="summary">Sustainability note: {selectedPlace.sustainabilityNote}</p>
+                ) : null}
                 <div className="reasons">
                   {selectedPlace.reasons.map((reason, idx) => (
                     <span key={idx} className="tag">

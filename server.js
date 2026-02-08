@@ -136,15 +136,7 @@ app.post("/api/voice-summary", async (req, res) => {
       voiceId = await getFallbackVoiceId();
     }
     if (!voiceId) return res.status(400).json({ error: "Missing ElevenLabs voice ID" });
-    if (!place?.id || !place?.name) return res.status(400).json({ error: "Missing place" });
-
-    const reviews = await fetchPlaceReviews(place.id);
-    console.log(`[voice] reviews fetched: ${reviews.length}`);
-    const reviewLines = reviews.slice(0, 8).map((r, idx) => {
-      const text = r?.text?.text || r?.text || "";
-      const rating = r?.rating ?? "n/a";
-      return `Review ${idx}: rating ${rating} - ${text}`;
-    });
+    if (!place?.name) return res.status(400).json({ error: "Missing place" });
 
     const quizText =
       `Diet: ${quiz?.diet || "Unknown"}. ` +
@@ -152,20 +144,17 @@ app.post("/api/voice-summary", async (req, res) => {
       `Priorities: ${(quiz?.priorities || []).join(", ") || "None"}.`;
     const placeText =
       `Place: ${place.name}. Score: ${place.score}/100. ` +
-      `Rating: ${place.rating ?? "N/A"} (${place.ratingCount ?? "N/A"} reviews). ` +
-      `Cuisine: ${place.tags?.cuisine || "Unknown"}. ` +
-      `Price level: ${place.tags?.priceLevel || "Unknown"}. ` +
-      `Open now: ${place.tags?.openNow === undefined ? "Unknown" : place.tags?.openNow ? "Yes" : "No"}.`;
+      `Cuisine: ${place.tags?.cuisine || "Unknown"}.`;
+    const noteText = place?.sustainabilityNote || "No sustainability note available.";
 
     const prompt =
       "You are a concise sustainability dining guide. " +
-      "Given the quiz and reviews, pick ONE review that best matches the user. " +
-      "Then write a short spoken summary (40-70 words) that says the restaurant name, " +
-      "mentions sustainability fit, and gives a personal opinion on fit for the user. " +
-      "Return ONLY JSON with keys review_index and script. If no reviews, use review_index -1 and still write script.\n\n" +
+      "Use the sustainability note to create a short spoken summary (35-60 words). " +
+      "Say the restaurant name, mention sustainability fit, and connect it to the user's preferences. " +
+      "Return ONLY JSON with keys script.\n\n" +
       `Quiz: ${quizText}\n` +
       `Place: ${placeText}\n` +
-      (reviewLines.length ? `Reviews:\n${reviewLines.join("\n")}` : "Reviews: none");
+      `Sustainability note: ${noteText}`;
 
     console.log("[voice] calling gemini...");
     const geminiRes = await fetch(
@@ -185,11 +174,9 @@ app.post("/api/voice-summary", async (req, res) => {
       geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ||
       "";
     const parsed = parseGeminiJson(rawText) || {};
-    const reviewSnippet = reviews?.[parsed.review_index]?.text?.text || reviews?.[0]?.text?.text || "";
     const fallbackScript =
       `${place.name} has a sustainability score of ${place.score}/100. ` +
-      `Based on your preferences (${quizText}), this looks like a ${place.score >= 70 ? "strong" : "moderate"} fit. ` +
-      (reviewSnippet ? `A like-minded review mentions: ${reviewSnippet}` : "Reviews were limited, so this is based on place data.");
+      `${noteText} Based on your preferences (${quizText}), this looks like a ${place.score >= 70 ? "strong" : "moderate"} fit.`;
     const script = parsed.script && parsed.script.length > 20 ? parsed.script : fallbackScript;
     console.log("[voice] gemini done");
 
