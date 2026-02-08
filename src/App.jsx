@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
+import sustainabilityMock from "../final_sustainability_mock.json";
 
 const DEFAULT_CENTER = [43.6532, -79.3832]; // Toronto
 
@@ -96,6 +97,17 @@ const buildExplanation = (name, score, reasons) => {
   const reasonText = reasons.length ? reasons.join(", ") : "Community review patterns.";
   return `Why ${name} matches: ${reasonText}. Sustainability fit score: ${score}/100.`;
 };
+
+const normalizeKey = (value) => String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
+const buildSustainabilityIndex = () => {
+  const index = new Map();
+  sustainabilityMock.forEach((entry) => {
+    const key = `${normalizeKey(entry.name)}|${normalizeKey(entry.address)}`;
+    index.set(key, entry);
+  });
+  return index;
+};
+const sustainabilityIndex = buildSustainabilityIndex();
 
 function App() {
   const mapRef = useRef(null);
@@ -195,8 +207,11 @@ const fetchPlaces = async () => {
       if (!res.ok) throw new Error("Failed to reach Places API");
       const data = await res.json();
       const formatted = (data.places || []).map((p, idx) => {
+        const types = p.types || [];
+        const isVegan = types.includes("vegan_restaurant");
+        const isVegetarian = types.includes("vegetarian_restaurant");
         const tags = {
-          cuisine: p.types?.[0],
+          cuisine: types[0],
           website: p.websiteUri,
           address: p.formattedAddress,
           phone: p.nationalPhoneNumber || p.internationalPhoneNumber,
@@ -206,17 +221,27 @@ const fetchPlaces = async () => {
           mapsUri: p.googleMapsUri,
           businessStatus: p.businessStatus,
           summary: p.editorialSummary?.text,
+          vegan: isVegan ? "yes" : "no",
+          vegetarian: isVegetarian ? "yes" : "no",
         };
         const name = p.displayName?.text || "Unknown Spot";
         const { score, reasons } = scoreRestaurant(tags, quiz);
+        const mockKey = `${normalizeKey(name)}|${normalizeKey(tags.address)}`;
+        const mockEntry = (isVegan || isVegetarian) ? sustainabilityIndex.get(mockKey) : null;
+        const finalScore = mockEntry?.sustainability_score ?? score;
+        const finalReasons = mockEntry
+          ? [...reasons, "Verified sustainability dataset"]
+          : reasons;
         return {
           id: p.id || `${name}-${idx}`,
           name,
           lat: p.location?.latitude,
           lon: p.location?.longitude,
           tags,
-          score,
-          reasons,
+          score: Math.round(finalScore),
+          reasons: finalReasons,
+          sustainabilityNote: mockEntry?.sustainability_note,
+          sustainabilityBreakdown: mockEntry?.breakdown,
           comments: pickRandom(MOCK_COMMENTS, 2),
           rating: p.rating,
           ratingCount: p.userRatingCount,
@@ -378,11 +403,11 @@ const fetchPlaces = async () => {
     return (
       <div className="start-screen">
         <div className="start-card intro">
-          <p className="eyebrow">Sustainable Dining Finder</p>
-          <h1>Personalize your journey</h1>
+          <p className="eyebrow">Sustainable Platter</p>
+          <h1>Sustainable Platter</h1>
           <p className="subtitle">
-            We use your preferences to tailor sustainability scores, highlight the right places, and explain why each
-            match fits you.
+            Personalized, sustainability-first restaurant discovery that helps you find places you’ll love while
+            prioritizing environmental impact.
           </p>
           <div className="intro-grid">
             <div className="intro-item">
@@ -492,11 +517,11 @@ const fetchPlaces = async () => {
     <div className="app">
       <header className="header">
         <div>
-          <p className="eyebrow">Sustainable Dining Finder</p>
-          <h1>Waste-Less, Value-More Restaurant Explorer</h1>
+          <p className="eyebrow">Sustainable Platter</p>
+          <h1>Sustainable Platter</h1>
           <p className="subtitle">
-            Prototype combining social signals, personalization, and sustainability logic to surface the best nearby
-            options and explain why.
+            Personalized, sustainability-first restaurant discovery that helps you find places you’ll love while
+            prioritizing environmental impact.
           </p>
         </div>
         <div className="status">
