@@ -1,0 +1,227 @@
+[
+  {
+    "name": "VegeDelight",
+    "address": "173 Dundas St W, Toronto, ON M5T 1C7",
+    "type": "Vegetarian",
+    "cuisine": "Chinese/Asian Fusion",
+    "distance_miles": 0.3,
+    "sustainability_score": 62.3,
+    "sustainability_note": "A community-focused establishment demonstrating good efforts in waste reduction. Opportunities exist for formalized certifications to enhance its sustainability profile.",
+    "breakdown": {
+      "local": 68,
+      "waste": 72,
+      "cert": 35,
+      "ops": 65
+    }
+  },
+  {
+    "name": "PLANTA Queen",
+    "address": "180 Queen St W, Toronto, ON M5V 3X3",
+    "type": "Vegan",
+    "cuisine": "Asian Fusion/Sushi",
+    "distance_miles": 0.6,
+    "sustainability_score": 87.8,
+    "sustainability_note": "A leader in plant-based dining, excelling in local procurement and comprehensive waste diversion strategies. Its operational efficiencies and certifications reflect a strong commitment to sustainability.",
+    "breakdown": {
+      "local": 88,
+      "waste": 92,
+      "cert": 80,
+      "ops": 90
+    }
+  },
+  {
+    "name": "Kupfert & Kim (First Canadian Place)",
+    "address": "100 King St W, Toronto, ON M5X 1A9",
+    "type": "Vegan",
+    "cuisine": "Plant-based Bowls",
+    "distance_miles": 0.7,
+    "sustainability_score": 79.4,
+    "sustainability_note": "Prioritizes local ingredients and effective waste management within a corporate building context. Continuous improvement in certifications could further solidify its position.",
+    "breakdown": {
+      "local": 82,
+      "waste": 86,
+      "cert": 65,
+      "ops": 78
+    }
+  },
+  {
+    "name": "Avelo",
+    "address": "51 St Nicholas St, Toronto, ON M4Y 1W6",
+    "type": "Vegan",
+    "cuisine": "Fine Dining/European",
+    "distance_miles": 0.8,
+    "sustainability_score": 93.9,
+    "sustainability_note": "An exemplary model for sustainable fine dining, achieving near-perfect scores in hyper-local sourcing and waste reduction. Its comprehensive certifications underscore its commitment.",
+    "breakdown": {
+      "local": 96,
+      "waste": 94,
+      "cert": 90,
+      "ops": 93
+    }
+  },
+  {
+    "name": "Rosalinda",
+    "address": "133 Richmond St W, Toronto, ON M5H 2L3",
+    "type": "Vegan",
+    "cuisine": "Mexican",
+    "distance_miles": 0.5,
+    "sustainability_score": 85.5,
+    "sustainability_note": "Demonstrates strong local sourcing and effective waste diversion, aligning with its modern and conscious brand identity. Robust operational efficiencies contribute to its high score.",
+    "breakdown": {
+      "local": 89,
+      "waste": 88,
+      "cert": 75,
+      "ops": 85
+    }
+  },
+  {
+    "name": "Saigon Lotus",
+    "address": "6 St Andrew St, Toronto, ON M5T 1K6",
+    "type": "Vegan",
+    "cuisine": "Vietnamese",
+    "distance_miles": 0.8,
+    "sustainability_score": 57.0,
+    "sustainability_note": "A long-standing establishment making foundational efforts in waste management. There are significant opportunities for enhanced local sourcing and operational efficiencies.",
+    "breakdown": {
+      "local": 62,
+      "waste": 68,
+      "cert": 30,
+      "ops": 58
+    }
+  },
+  {
+    "name": "Soy Boys",
+    "address": "471 Church St, Toronto, ON M4Y 2C5",
+    "type": "Vegan",
+    "cuisine": "Fast Food/Burgers",
+    "distance_miles": 0.7,
+    "sustainability_score": 68.6,
+    "sustainability_note": "Shows commitment to conscious ingredient choices and good waste reduction practices for its size. Pursuing formal certifications could elevate its recognized sustainability efforts.",
+    "breakdown": {
+      "local": 73,
+      "waste": 78,
+      "cert": 45,
+      "ops": 70
+    }
+  },
+  {
+    "name": "Buddha's Vegan Restaurant",
+    "address": "666 Dundas St W, Toronto, ON M5T 1H9",
+    "type": "Vegan",
+    "cuisine": "Chinese/Buddhist",
+    "distance_miles": 0.9,
+    "sustainability_score": 55.4,
+    "sustainability_note": "A traditional vegan spot with basic waste management, but opportunities exist for integrating more modern sustainable practices. Local sourcing could also be more emphasized.",
+    "breakdown": {
+      "local": 60,
+      "waste": 68,
+      "cert": 25,
+      "ops": 60
+    }
+  },
+  {
+    "name": "Greens Vegetarian",
+    "address": "638 Dundas St W, Toronto, ON M5T 1H8",
+    "type": "Vegan",
+    "cuisine": "Pan-Asian",
+    "distance_miles": 0.9,
+    "sustainability_score": 74.4,
+    "sustainability_note": "A solid performer in local ingredient sourcing and waste reduction, maintaining a consistent focus on healthy, responsible food. Continued operational improvements are advisable.",
+    "breakdown": {
+      "local": 78,
+      "waste": 80,
+      "cert": 60,
+      "ops": 72
+    }
+  },
+  {
+    "name": "Fresh Kitchen + Juice Bar (Front St)",
+    "address": "47 Front St E, Toronto, ON M5E 1B3",
+    "type": "Vegan",
+    "cuisine": "Plant-based Comfort Food",
+    "distance_miles": 0.7,
+    "sustainability_score": 85.6,
+    "sustainability_note": "Excels in fresh, local ingredient procurement and robust waste management systems, aligning with its healthy lifestyle brand. Its efficient operations are a key strength.",
+    "breakdown": {
+      "local": 87,
+      "waste": 90,
+      "cert": 75,
+      "ops": 88
+    }
+  },
+  {
+    "name": "Copper Branch",
+    "address": "199 Bay St (Commerce Court), Toronto, ON M5L 1E2",
+    "type": "Vegan",
+    "cuisine": "Fast Casual",
+    "distance_miles": 0.6,
+    "sustainability_score": 79.2,
+    "sustainability_note": "Benefits from corporate sustainability initiatives, demonstrating good efforts in waste reduction and sourcing typical of a conscious fast-casual chain. Operational efficiency is well-managed.",
+    "breakdown": {
+      "local": 80,
+      "waste": 84,
+      "cert": 70,
+      "ops": 80
+    }
+  },
+  {
+    "name": "Fat Choi (Inside SOOS)",
+    "address": "94 Ossington Ave, Toronto, ON M6J 2Z4",
+    "type": "Vegan",
+    "cuisine": "Malaysian Fusion",
+    "distance_miles": 1.2,
+    "sustainability_score": 66.1,
+    "sustainability_note": "Makes efforts in waste management and ingredient consciousness within its specific venue. Further integrating advanced operational efficiencies could boost its overall score.",
+    "breakdown": {
+      "local": 72,
+      "waste": 75,
+      "cert": 40,
+      "ops": 68
+    }
+  },
+  {
+    "name": "Kupfert & Kim (Spadina)",
+    "address": "140 Spadina Ave, Toronto, ON M5V 2L4",
+    "type": "Vegan",
+    "cuisine": "Bowls & Salads",
+    "distance_miles": 0.9,
+    "sustainability_score": 79.6,
+    "sustainability_note": "Consistent with the brand's commitment to local sourcing and effective waste diversion, maintaining high standards across locations. Strong operational practices are evident.",
+    "breakdown": {
+      "local": 82,
+      "waste": 86,
+      "cert": 65,
+      "ops": 80
+    }
+  },
+  {
+    "name": "Veggie D'Light",
+    "address": "160 Baldwin St #3, Toronto, ON M5T 3K7",
+    "type": "Vegan",
+    "cuisine": "Caribbean",
+    "distance_miles": 0.8,
+    "sustainability_score": 62.3,
+    "sustainability_note": "Focuses on fresh, plant-based options with foundational efforts in waste reduction. There's potential for growth in formal sustainability accreditations and localized sourcing.",
+    "breakdown": {
+      "local": 68,
+      "waste": 72,
+      "cert": 35,
+      "ops": 65
+    }
+  },
+  {
+    "name": "Blaze Pizza (Dundas St)",
+    "address": "10 Dundas St E #124, Toronto, ON M5B 2G9",
+    "type": "Vegetarian Friendly",
+    "cuisine": "Pizza (Vegan Cheese available)",
+    "distance_miles": 0.1,
+    "sustainability_score": 52.5,
+    "sustainability_note": "As a fast-casual chain, efforts are primarily in operational efficiency and basic recycling. Advanced local sourcing and comprehensive sustainability certifications are limited at this location.",
+    "breakdown": {
+      "local": 55,
+      "waste": 65,
+      "cert": 25,
+      "ops": 60
+    }
+  }
+]
