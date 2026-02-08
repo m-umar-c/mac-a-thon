@@ -112,12 +112,17 @@ function App() {
   const [youtubeResults, setYoutubeResults] = useState([]);
   const [youtubeStatus, setYoutubeStatus] = useState("idle");
   const [quizStarted, setQuizStarted] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState("idle");
+  const [voiceMessage, setVoiceMessage] = useState("");
+  const [voiceScript, setVoiceScript] = useState("");
 
   const [quiz, setQuiz] = useState({
     diet: null,
     budget: null,
     priorities: [],
     maxDistanceKm: 3,
+    voiceEnabled: false,
+    voiceGender: "female",
   });
 
   useEffect(() => {
@@ -282,10 +287,16 @@ const fetchPlaces = async () => {
           `<br/>Status: ${openText}` +
           `<br/>Address: ${place.tags?.address || "Not listed"}`
       );
-      marker.on("click", () => setSelectedPlace(place));
+      marker.on("click", () => {
+        setSelectedPlace(place);
+        const isPurple = place.score >= 50 && place.score < 75;
+        if (quiz.voiceEnabled && isPurple) {
+          requestSpokenSummary(place);
+        }
+      });
       return marker;
     });
-  }, [places]);
+  }, [places, quiz.voiceEnabled, quiz.voiceGender]);
 
   useEffect(() => {
     if (userLocation && selectedPlace) {
@@ -308,6 +319,60 @@ const fetchPlaces = async () => {
   };
 
   const quizReady = Boolean(quiz.diet && quiz.budget && quiz.priorities.length);
+
+  const requestSpokenSummary = async (place) => {
+    if (!place?.id) return;
+    try {
+      setVoiceStatus("loading");
+      setVoiceMessage("Generating voice summary...");
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch("http://localhost:3001/api/voice-summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          place: {
+            id: place.id,
+            name: place.name,
+            score: place.score,
+            rating: place.rating,
+            ratingCount: place.ratingCount,
+            tags: place.tags,
+          },
+          quiz,
+          voiceGender: quiz.voiceGender,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = data?.error || "Voice summary failed";
+        setError(`Voice: ${msg}`);
+        setVoiceStatus("error");
+        setVoiceMessage(`Voice failed: ${msg}`);
+        throw new Error(msg);
+      }
+      if (data?.script) {
+        setVoiceScript(data.script);
+      }
+      if (!data?.audioBase64) return;
+      const audio = new Audio(`data:audio/mpeg;base64,${data.audioBase64}`);
+      audio.play().catch((err) => {
+        setError(`Voice: ${err?.message || "Audio playback blocked"}`);
+        setVoiceStatus("error");
+        setVoiceMessage(`Voice failed: ${err?.message || "Audio playback blocked"}`);
+      });
+      setVoiceStatus("done");
+      setVoiceMessage("Voice summary playing.");
+    } catch (e) {
+      if (String(e?.name || "").includes("Abort")) {
+        setVoiceStatus("error");
+        setVoiceMessage("Voice timed out.");
+      }
+      console.log("[voice] error", e?.message || e);
+    }
+  };
 
   if (!quizStarted) {
     return (
@@ -389,6 +454,31 @@ const fetchPlaces = async () => {
               onChange={(e) => setQuiz((prev) => ({ ...prev, maxDistanceKm: Number(e.target.value) }))}
             />
           </div>
+          <div className="field">
+            <label>Spoken summaries</label>
+            <div className="voice-row">
+              <button
+                className={quiz.voiceEnabled ? "chip active" : "chip"}
+                onClick={() => setQuiz((prev) => ({ ...prev, voiceEnabled: !prev.voiceEnabled }))}
+              >
+                {quiz.voiceEnabled ? "Enabled" : "Disabled"}
+              </button>
+              <button
+                className={quiz.voiceGender === "female" ? "chip active" : "chip"}
+                onClick={() => setQuiz((prev) => ({ ...prev, voiceGender: "female" }))}
+                disabled={!quiz.voiceEnabled}
+              >
+                Female voice
+              </button>
+              <button
+                className={quiz.voiceGender === "male" ? "chip active" : "chip"}
+                onClick={() => setQuiz((prev) => ({ ...prev, voiceGender: "male" }))}
+                disabled={!quiz.voiceEnabled}
+              >
+                Male voice
+              </button>
+            </div>
+          </div>
           {!quizReady ? <p className="muted">Select a diet, budget, and at least one priority to continue.</p> : null}
           <button className="cta" disabled={!quizReady} onClick={() => setQuizStarted(true)}>
             Start exploring
@@ -412,6 +502,9 @@ const fetchPlaces = async () => {
         <div className="status">
           <span>{loading ? "Scanning map..." : "Live map"}</span>
           {error ? <span className="error">{error}</span> : null}
+          {quiz.voiceEnabled && voiceStatus !== "idle" ? (
+            <span className={voiceStatus === "error" ? "error" : ""}>{voiceMessage}</span>
+          ) : null}
         </div>
       </header>
 
@@ -470,6 +563,31 @@ const fetchPlaces = async () => {
                 value={quiz.maxDistanceKm}
                 onChange={(e) => setQuiz((prev) => ({ ...prev, maxDistanceKm: Number(e.target.value) }))}
               />
+            </div>
+            <div className="field">
+              <label>Spoken summaries</label>
+              <div className="voice-row">
+                <button
+                  className={quiz.voiceEnabled ? "chip active" : "chip"}
+                  onClick={() => setQuiz((prev) => ({ ...prev, voiceEnabled: !prev.voiceEnabled }))}
+                >
+                  {quiz.voiceEnabled ? "Enabled" : "Disabled"}
+                </button>
+                <button
+                  className={quiz.voiceGender === "female" ? "chip active" : "chip"}
+                  onClick={() => setQuiz((prev) => ({ ...prev, voiceGender: "female" }))}
+                  disabled={!quiz.voiceEnabled}
+                >
+                  Female voice
+                </button>
+                <button
+                  className={quiz.voiceGender === "male" ? "chip active" : "chip"}
+                  onClick={() => setQuiz((prev) => ({ ...prev, voiceGender: "male" }))}
+                  disabled={!quiz.voiceEnabled}
+                >
+                  Male voice
+                </button>
+              </div>
             </div>
           </div>
 
@@ -570,6 +688,12 @@ const fetchPlaces = async () => {
                         : "No"}
                   </div>
                 </div>
+                {voiceScript ? (
+                  <div className="summary">
+                    <strong>Gemini report:</strong>
+                    <div>{voiceScript}</div>
+                  </div>
+                ) : null}
                 <div className="youtube">
                   <button
                     className="chip"
